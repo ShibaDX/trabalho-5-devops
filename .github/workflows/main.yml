@@ -1,0 +1,33 @@
+name: Pipeline CI - T5
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 3. Compilar e Executar Testes
+        run: mvn --batch-mode clean test
+
+      - name: 4. Empacotar Artefato (JAR)
+        run: mvn --batch-mode package -DskipTests
+
+      - name: 5. Armazenar Artefato Identificado
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar-${{ github.sha }}
+          path: target/*.jar

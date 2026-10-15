@@ -1,244 +1,189 @@
-# Biblioteca
 
-Este projeto é uma aplicação web de **Biblioteca** construída com **Spring Boot**, com duas formas de acesso:
+# Trabalho 5 (T5) — Pipeline CI Mínimo e Reprodutível
 
-- **Aplicação Web (Thymeleaf)**: interface HTML com autenticação via **login por formulário**.
-- **API REST (`/api/**`)**: endpoints REST protegidos com **JWT (Bearer Token)**.
+**Disciplina:** Cloud Computing e DevOps Avançado  
+**Curso:** Sistemas para Internet | 6º Período  
+**Professor:** Diogo Ranghetti  
 
-## Arquitetura
+---
 
-A aplicação segue uma arquitetura em camadas (MVC + Service + Repository), com separação por pacotes:
+## 👥 Integrantes do Grupo
 
-- **`com.unialfa.biblioteca.controller`**
-  - Controllers MVC (retornam páginas/`templates` Thymeleaf).
-  - Ex.: `LivroController`, `AutorController`, `UsuarioController`, `LoginController`.
+- **[Gabriel Fonseca Proença]** - [RA: 14608]
+- **[Guilherme Carrera]** - [RA: 14651]
+- **[Kaiky Massaki Ishibashi]** - [RA: 14535]
+- **[Marcos Kaiky Rodrigues Garcia]** - [RA: 14610]
 
-- **`com.unialfa.biblioteca.api`**
-  - Controllers REST (retornam JSON), expostos em `/api/**`.
-  - Ex.: `AuthApi` (login e geração do token), `LivroApi`, `AutorApi`.
+---
 
-- **`com.unialfa.biblioteca.service`**
-  - Regras de negócio e serviços transversais.
-  - Ex.: `LivroService`, `AutorService`, `UsuarioService` e `TokenService`.
+## 📌 Sobre o Projeto
 
-- **`com.unialfa.biblioteca.repository`**
-  - Repositórios Spring Data (acesso a dados).
-  - Ex.: `LivroRepository`, `AutorRepository`, `UsuarioRepository`.
+Este repositório contém a implementação de um pipeline de **Integração Contínua (CI)** mínimo, automatizado e reprodutível para a aplicação **[Biblioteca]**. O objetivo é garantir que cada alteração no código seja verificada automaticamente através de compilação, execução de testes e geração de um artefato rastreável a partir de um ambiente limpo.
 
-- **`com.unialfa.biblioteca.model`**
-  - Entidades JPA (`@Entity`) e modelo de domínio.
-  - Ex.: `Usuario`, `Livro`, `Autor`.
+- **Ficheiro de definição do pipeline:** `[.github/workflows/main.yml]`
 
-- **`com.unialfa.biblioteca.config`**
-  - Configurações da aplicação.
-  - Ex.: `SecurityConfiguration` (segurança e autenticação).
+---
 
-### Diagrama da Arquitetura
+## 🚀 Instruções de Execução
 
-- **Diagrama .mmd**: [`docs/arquitetura.mmd`](docs/arquitetura.mmd)
-- **Diagrama .drawio**: [`docs/arquitetura.drawio`](docs/arquitetura.drawio)
+### Execução Automática (via CI)
+1. Realize uma alteração no código-fonte num ramo de desenvolvimento ou diretamente na branch configurada.
+2. Faça o commit das alterações:
 
-![Arquitetura](docs/biblioteca-arquitetura.drawio.png)
+   ```
+   git add .
+   git commit -m "feat: descrição da alteração"
+   ```
 
+3. Envie as alterações para o repositório remoto (`git push origin main`) ou abra um **Pull Request** apontando para a branch `main`.
+4. Vá para o separador **[Actions / CI-CD]** do repositório para acompanhar a execução automática em tempo real.
 
-### Diagrama do fluxo de autenticação
+### Execução Local (Ambiente de Desenvolvimento)
 
-- **Fonte (Web / formLogin)**: [`docs/auth-web.mmd`](docs/auth-web.mmd)
+Caso deseje validar o build e os testes na sua máquina antes de enviar para o repositório:
 
-![Arquitetura](docs/auth-web.png)
+1. Clone este repositório:
+   
+```
+git clone https://github.com/ShibaDX/trabalho-5-devops.git
+cd ./trabalho-5-devops/
+```
 
-- **Fonte (API / JWT)**: [`docs/auth-api-jwt.mmd`](docs/auth-api-jwt.mmd)
-  
-![Arquitetura](docs/auth-api-jwt.png)
+2. Certifique-se de ter o **Java [Versão, ex.: 21]** e o **Maven** instalados.
+   
+3. Execute a compilação e os testes em modo batch:
 
-### Fluxo de dados (visão geral)
+```
+mvn --batch-mode clean test
+```
 
-- **Web (Thymeleaf)**
-  - Browser -> `controller/*` -> `service/*` -> `repository/*` -> H2
-  - As views ficam em `src/main/resources/templates/**`.
 
-- **API (`/api/**`)**
-  - Cliente REST -> `api/*` -> `service/*` -> `repository/*` -> H2
-  - Proteção por token JWT (exceto login).
+4. Gere o pacote da aplicação (artefato `.jar`):
+```
+mvn --batch-mode package
+```
 
-## Frameworks e bibliotecas
 
-Conforme o `pom.xml`:
 
-- **Spring Boot 4.0.6**
-  - Base do projeto, autoconfiguração e inicialização.
+---
 
-- **Spring Web MVC (`spring-boot-starter-webmvc`)**
-  - Controllers, rotas, validações e camada web.
+## ⚙️ Estrutura e Identificação do Pipeline
 
-- **Thymeleaf (`spring-boot-starter-thymeleaf`)**
-  - Renderização de HTML no servidor (templates).
-  - Integração com segurança via `thymeleaf-extras-springsecurity6`.
+### 1. Gatilho (Trigger)
 
-- **Spring Data JPA (`spring-boot-starter-data-jpa`)**
-  - Persistência com JPA/Hibernate e repositórios.
+* **Eventos que iniciam o pipeline:**
+* `push` na branch `main`.
+* Abertura ou atualização de `pull_request` direcionado à branch `main`.
+* `[Opcional: workflow_dispatch para execução manual autorizada]`.
 
-- **H2 Database**
-  - Banco em memória (configurado em `application.properties`).
-  - Console habilitado em `/h2-console`.
 
-- **Spring Security (`spring-boot-starter-security`)**
-  - Autenticação/Autorização.
-  - Dois modos: form-login (web) e resource server JWT (API).
 
-- **Spring OAuth2 Resource Server (`spring-boot-starter-oauth2-resource-server`)**
-  - Validação de token JWT no modo Bearer Token para `/api/**`.
+### 2. Etapas (Steps / Stages)
 
-## Configurações (application.properties)
+O fluxo do pipeline está dividido nas seguintes etapas sequenciais:
 
-- **H2**: `spring.datasource.url=jdbc:h2:mem:banco`
-- **Console H2**: `spring.h2.console.path=/h2-console`
-- **Segredo JWT**: `api.security.token.secret=...`
-  - Este valor é usado para assinar e validar tokens (HMAC SHA-256).
+| Ordem | Etapa | Comando / Ação Executada | Condição de Passagem |
+| --- | --- | --- | --- |
+| **1** | **Checkout** | `actions/checkout@v4` | Obter a versão exata do código do commit atual num ambiente limpo. |
+| **2** | **Setup do Ambiente** | `actions/setup-java@v4` | Configurar o JDK `[ex.: 17]` e ativar o cache de dependências do Maven. |
+| **3** | **Build e Testes** | `mvn --batch-mode clean test` | O código deve compilar sem erros e 100% dos testes unitários/integração devem passar. |
+| **4** | **Empacotamento** | `mvn --batch-mode package -DskipTests` | Gerar o ficheiro `.jar` na diretoria `target/` apenas se a etapa anterior tiver sucesso. |
+| **5** | **Publicação do Artefato** | `actions/upload-artifact@v4` | Armazenar o artefato gerado associando-o ao hash (`SHA`) do commit. |
 
-## Autenticação e autorização (detalhamento)
+### 3. Dependências
 
-A segurança está centralizada em `com.unialfa.biblioteca.config.SecurityConfiguration`.
+* **Ambiente de Execução (Runner):** `ubuntu-latest` (ambiente limpo provisionado a cada execução).
+* **Runtime e Ferramentas:**
+* Java JDK `[Versão, ex.: 21 ( distribuição Eclipse Temurin )]`.
+* Apache Maven `[Versão padrão do runner ou Maven Wrapper ./mvnw]`.
+* Docker `[Caso construam imagem de contentor no pipeline]`.
 
-O projeto define **duas cadeias de filtros** (`SecurityFilterChain`) separadas:
 
-- **`apiFilterChain` (Order 1)**: vale somente para rotas `/api/**` e usa JWT.
-- **`securityFilterChain` (Order 2)**: vale para o restante do site (Thymeleaf) e usa form-login.
+* **Dependências da Aplicação:** Geridas via ficheiro `pom.xml` (transferidas automaticamente a partir do Maven Central durante a execução).
 
-### 1) `@Configuration` e `@EnableWebSecurity`
+### 4. Artefato Produzido
 
-- **`@Configuration`**
-  - Informa ao Spring que a classe declara beans (`@Bean`).
-- **`@EnableWebSecurity`**
-  - Habilita a configuração de segurança web do Spring Security.
+* **Tipo de Artefato:** Pacote Java executável (`.jar`) `[e/ou Imagem Docker]`.
+* **Caminho de Geração:** `target/[nome-do-projeto]-[versao].jar`.
+* **Identificação e Rastreabilidade:** O artefato é publicado no pipeline com o formato `app-jar-<COMMIT_SHA>` (ex.: `app-jar-a1b2c3d`), garantindo que cada pacote gerado está inequivocamente vinculado ao commit exato que o originou.
 
-### 2) Propriedade `secret` (`@Value("${api.security.token.secret}")`)
+---
 
-- Lê o segredo definido em `application.properties`.
-- É usado para criar as chaves de **assinatura** e **validação** do JWT (algoritmo HS256).
+## 📸 Evidências de Execução
 
-### 3) Cadeia da API: `apiFilterChain(HttpSecurity http)`
+### ✅ 1. Evidência de Execução Bem-Sucedida
 
-Trecho principal:
+> **Contexto:** Execução realizada a partir do commit `[inserir hash do commit, ex.: a1b2c3d]`, onde a compilação, todos os testes automatizados e o empacotamento ocorreram sem erros.
 
-- **`.securityMatcher("/api/**")`**
-  - Diz que esta cadeia **só** se aplica a endpoints que começam com `/api/`.
-  - Isso permite ter um modo de segurança para a API e outro para as páginas web.
+* **Link direto para a execução (Run):** `[Inserir URL da execução no GitHub Actions / GitLab]`
+* **Registo / Captura de Ecrã:**
 
-- **`.authorizeHttpRequests(...)`**
-  - Define as regras de autorização.
-  - **`/api/auth/login`** está como `permitAll()` porque é o endpoint onde você obtém o token.
-  - **Qualquer outra rota** `/api/**` exige usuário autenticado: `.anyRequest().authenticated()`.
 
-- **`.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))`**
-  - Ativa o modo *Resource Server*.
-  - Isso faz o Spring procurar o token no header:
-    - `Authorization: Bearer <token>`
-  - A validação do token usa o bean `JwtDecoder` definido na própria classe.
+*(Substitua a linha acima pelo print das etapas verdes no pipeline e do artefato gerado disponível para transferência)*
 
-- **`.csrf(AbstractHttpConfigurer::disable)`**
-  - Desabilita CSRF para a API.
-  - Motivo: API REST stateless normalmente não usa cookie de sessão; o token no header já é a credencial.
+```
+[Opcional: Cole aqui o trecho final do log do Maven comprovando os testes executados e o BUILD SUCCESS]
+Exemplo:
+Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Building jar: /home/runner/work/.../target/biblioteca-0.0.1-SNAPSHOT.jar
+[INFO] BUILD SUCCESS
 
-- **`.sessionManagement(...SessionCreationPolicy.STATELESS)`**
-  - Garante que não haverá sessão HTTP.
-  - Cada request precisa enviar o token (stateless).
+```
 
-### 4) Cadeia do site: `securityFilterChain(HttpSecurity http)`
+---
 
-Trecho principal:
+### ❌ 2. Evidência de Falha Detetada
 
-- **`.authorizeHttpRequests(...)`**
-  - Regras para as páginas web.
-  - **`/h2-console/**` e `/usuarios/**`**: somente `hasRole("ADMIN")`.
-    - Observação: `hasRole("ADMIN")` procura a authority `ROLE_ADMIN`.
-  - **Recursos estáticos** (`/css/**`, `/js/**`, `/images/**`, `/webjars/**`): `permitAll()`.
-  - Demais páginas: autenticadas.
+> **Contexto:** Simulação de erro realizada no commit `[inserir hash do commit de falha]`, através da alteração propositada de `[ex.: uma asserção no teste de cálculo de empréstimo / erro de compilação]`. O pipeline detetou o problema na etapa de **Testes** e interrompeu imediatamente o fluxo, impedindo o empacotamento e a publicação de um artefato defeituoso.
 
-- **`.formLogin(form -> ...)`**
-  - Ativa login por formulário.
-  - **`.loginPage("/login")`**: usa uma página customizada servida por `LoginController`.
-  - **`.defaultSuccessUrl("/", true)`**: após login bem-sucedido, redireciona para `/`.
-  - **`.permitAll()`**: libera acesso à página de login e ao endpoint de submissão.
+* **Link direto para a execução com falha (Run):** `[Inserir URL da execução que falhou]`
+* **Registo / Captura de Ecrã:**
 
-- **`.logout(logout -> ...)`**
-  - Configura o logout.
-  - **`.logoutUrl("/logout")`**: endpoint para encerrar a sessão.
-  - **`.logoutSuccessUrl("/login?logout")`**: redireciona após logout.
-  - **`.permitAll()`**: logout pode ser acessado por usuários autenticados sem bloqueio extra.
 
-- **`.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))`**
-  - Mantém CSRF ligado no site (bom padrão para form-login), mas **ignora** o H2 console.
-  - O H2 console normalmente usa frames e posts internos que conflitam com CSRF.
+*(Substitua a linha acima pelo print mostrando a etapa de testes vermelha e as etapas seguintes canceladas/ignoradas)*
 
-- **`.headers(headers -> headers.frameOptions( ... sameOrigin))`**
-  - Ajusta `X-Frame-Options` para permitir que o H2 console funcione.
-  - `sameOrigin` permite frames somente do mesmo domínio.
+```
+[Opcional: Cole aqui o trecho do log que mostra a falha exata apontada pelo pipeline]
+Exemplo:
+[ERROR] Tests run: 12, Failures: 1, Errors: 0, Skipped: 0
+[ERROR] CalcEmprestimoTest.deveCalcularPrazoCorretamente:42 expected: <7> but was: <10>
+[INFO] BUILD FAILURE
+Error: Process completed with exit code 1.
 
-### 5) `PasswordEncoder` (`BCryptPasswordEncoder`)
+```
 
-- Bean `passwordEncoder()` retorna `BCryptPasswordEncoder`.
-- Serve para:
-  - Armazenar senha com hash seguro.
-  - Validar senha no login.
-- O `UsuarioService` usa este encoder para salvar senhas.
+---
 
-### 6) `AuthenticationManager`
+## 🔍 Explicações Técnicas e Operacionais
 
-- Bean `authenticationManager(AuthenticationConfiguration config)`.
-- É o componente que executa a autenticação.
-- No projeto, ele é usado no endpoint REST:
-  - `AuthApi.login()` chama `authenticationManager.authenticate(...)`.
+### 1. Como Reproduzir o Processo
 
-### 7) JWT: `JwtDecoder` e `JwtEncoder`
+O pipeline foi desenhado para ser **100% independente da máquina local** de qualquer programador:
 
-- **`jwtDecoder()`**
-  - Constrói um `SecretKeySpec` com o `secret` e algoritmo `HmacSHA256`.
-  - Cria um `NimbusJwtDecoder` para **validar** tokens recebidos na API.
+* Todas as instruções do fluxo estão versionadas como código no ficheiro `[.github/workflows/ci.yml]`.
+* Para outra equipa reproduzir o processo, basta realizar um *fork* ou clonar este repositório num ambiente com GitHub Actions ativo.
+* Como o pipeline utiliza imagens oficiais de runners limpos (`ubuntu-latest`), instala explicitamente a versão fixa do Java e resolve as dependências declaradas no `pom.xml` em modo não interativo (`--batch-mode`), qualquer execução sob o mesmo commit produzirá um resultado consistente e determinístico.
 
-- **`jwtEncoder()`**
-  - Usa o mesmo segredo para **assinar** tokens.
-  - `ImmutableSecret` + `NimbusJwtEncoder` geram o JWT HS256.
+### 2. Como Investigar Falhas
 
-### 8) Como o login da API gera o token
+Quando uma execução do pipeline falha, o diagnóstico deve seguir os passos abaixo:
 
-Arquivo: `com.unialfa.biblioteca.api.AuthApi`
+1. **Identificar a Execução e o Commit:** No separador **Actions** (ou diretamente no *check* vermelho do Pull Request/Commit), clicar na execução que apresentou erro.
+2. **Localizar a Etapa que Falhou:** O painel visual indicará exatamente em qual passo o fluxo parou (ex.: *Checkout*, *Build* ou *Testes*).
+3. **Analisar os Logs de Execução:** Expandir a secção com o ícone de erro (`❌`) para ler a saída do terminal:
+* **Falha de Compilação:** Verificar erros de sintaxe ou dependências em falta apontados pelo compilador (`COMPILATION ERROR`).
+* **Falha nos Testes:** Localizar o resumo do *Maven Surefire Plugin* para identificar a classe, o método de teste e a linha exata onde o comportamento divergiu do esperado (`Failures` ou `Errors`).
 
-- Recebe JSON com `username` e `password` em `/api/auth/login`.
-- Autentica com `AuthenticationManager`.
-- Se der certo, chama `TokenService.gerar(auth)`.
 
-Arquivo: `com.unialfa.biblioteca.service.TokenService`
+4. **Correção e Revalidação:** Reproduzir o teste localmente (`mvn test`), corrigir o defeito e submeter um novo commit para que o pipeline valide a correção automaticamente.
 
-- Monta `JwtClaimsSet` com:
-  - **`issuer`**: "biblioteca"
-  - **`subject`**: `auth.getName()` (login)
-  - **`roles`**: authorities do usuário
-  - **`expiresAt`**: 24h
-- Assina com HS256 e retorna o token.
+### 3. Como os Segredos são Protegidos
 
-## Usuários padrão
+Para garantir a segurança básica do pipeline e da aplicação, foram adotadas as seguintes práticas:
 
-Em `BibliotecaApplication`, existe um `CommandLineRunner` que cria dois usuários no start:
+* **Zero Segredos no Código:** Nenhuma senha, token de API, chave privada ou credencial de banco de dados / registo Docker é armazenada em texto puro no código-fonte, em ficheiros `application.properties` públicos ou no ficheiro YAML do pipeline.
+* **Uso de Cofre Nativo da Plataforma:** Todas as variáveis sensíveis necessárias para o pipeline são cadastradas exclusivamente nos **Encrypted Secrets** do repositório (`Settings > Secrets and variables > Actions`) e injetadas apenas em tempo de execução através da sintaxe `${{ secrets.NOME_DO_SEGREDO }}`.
+* **Mascaramento em Logs:** Os valores provenientes do cofre de segredos são automaticamente mascarados (`***`) nos logs de execução da plataforma, evitando exposição acidental durante auditorias ou diagnósticos de erro.
+* **Princípio do Menor Privilégio:** As permissões do token de execução do pipeline (`GITHUB_TOKEN`) são mantidas restritas apenas ao necessário para a leitura do código e upload de artefatos da execução.
 
-- `admin` / `admin` com perfil `ADMIN`
-- `user` / `user` com perfil `USER`
-
-## Como executar
-
-- Executar a aplicação:
-  - `./mvnw spring-boot:run`
-- Acessos:
-  - **Site**: `http://localhost:8080/`
-  - **Login**: `http://localhost:8080/login`
-  - **H2 Console**: `http://localhost:8080/h2-console`
-
-## Como testar a API (exemplo)
-
-- Fazer login e obter token (POST):
-  - `http://localhost:8080/api/auth/login`
-  - Body JSON:
-    - `{ "username": "admin", "password": "admin" }`
-- Usar token nas demais rotas:
-  - Header: `Authorization: Bearer <token>`
-
+```
